@@ -1,9 +1,18 @@
 package br.com.inforsec.GeotagImages;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.swing.JOptionPane;
 
 import org.apache.commons.validator.routines.UrlValidator;
@@ -26,12 +35,14 @@ public class ExcelFile {
 	private HSSFSheet sheet;
 	private HSSFWorkbook workbook;
 
+	@Deprecated
 	public ExcelFile(String filename) {
 		this.filename = filename;
 		this.workbook = new HSSFWorkbook();
 		this.sheet = this.workbook.createSheet("FirstSheet");
 	}
 
+	@Deprecated
 	public void addRow(Object... cells) {
 		HSSFRow row = sheet.createRow((short) rowCount);
 		UrlValidator urlv = new UrlValidator();
@@ -61,6 +72,7 @@ public class ExcelFile {
 		rowCount++;
 	}
 
+	@Deprecated
 	public void close() {
 		FileOutputStream fileOut;
 		try {
@@ -81,6 +93,7 @@ public class ExcelFile {
 
 	}
 
+	@Deprecated
 	public void setHeader(String... cells) {
 		HSSFRow rowhead = sheet.createRow((short) 0);
 		HSSFFont font = this.workbook.createFont();
@@ -96,5 +109,67 @@ public class ExcelFile {
 		}
 
 		rowCount++;
+	}
+	// HTTP POST request
+	public static void downloadExcel(String label)  {
+
+		String USER_AGENT = "Mozilla/5.0";
+		
+		String url = "http://inforsec.com.br/latlong/Home/excel";
+		try {
+			URL obj = new URL(url);
+			HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+
+			//add request header
+			con.setRequestMethod("POST");
+			con.setRequestProperty("User-Agent", USER_AGENT);
+			con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+
+			String urlParameters = "label=" + label;
+			
+			// Send post request
+			con.setDoOutput(true);
+			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
+			wr.writeBytes(urlParameters);
+			wr.flush();
+			wr.close();
+
+			int responseCode = con.getResponseCode();
+			System.out.println("\nSending 'POST' request to URL : " + url);
+			System.out.println("Post parameters : " + urlParameters);
+			System.out.println("Response Code : " + responseCode);
+
+			BufferedReader in = new BufferedReader(
+			        new InputStreamReader(con.getInputStream()));
+			String inputLine;
+			StringBuffer response = new StringBuffer();
+
+			while ((inputLine = in.readLine()) != null) {
+				response.append(inputLine);
+			}
+			in.close();
+			
+			//print result
+			ReadableByteChannel rbc = Channels.newChannel(obj.openStream());
+			FileOutputStream fos = new FileOutputStream("excel.xslx");
+			fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+			
+			fos.close();
+			
+			System.out.println(response.toString());
+
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }
