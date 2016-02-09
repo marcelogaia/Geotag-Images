@@ -1,8 +1,5 @@
 package br.com.inforsec.GeotagImages;
 
-import java.awt.BorderLayout;
-import java.awt.Container;
-import java.awt.Font;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -12,13 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
-import javax.swing.BorderFactory;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
-import javax.swing.SwingConstants;
-import javax.swing.border.Border;
 
 public class GeotagImages {
 
@@ -27,7 +18,6 @@ public class GeotagImages {
 	public static PrintStream LOG;
 	
 	public static void save(String inputFolder, String projectName, boolean generateExcel) {
-
 		try {
 			FileOutputStream fos = new FileOutputStream(new File("log.log"),
 					true);
@@ -42,50 +32,9 @@ public class GeotagImages {
 			ImageFolder folder;
 			folder = new ImageFolder(inputFolder, outputFolder);
 
-			// ExcelFile eFile = new ExcelFile(path + "/relatorio.xls");
-
-			/*
-			 * eFile.setHeader("Caminho + nome do arquivo", "Nome da rua",
-			 * "Placas", "Latitude", "Longitude", "Link da foto",
-			 * "Link no Google Maps", "OBS.");
-			 */
-
-			// Creating the progress bar dialog
-			LOG.println("GeotagImages: Creating the progress bar dialog");
-
-			JFrame f = new JFrame("Geotag Images - Progresso");
-			f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			Container content = f.getContentPane();
-			JProgressBar progressBar = new JProgressBar();
-			progressBar.setValue(0);
-			progressBar.setStringPainted(true);
-			Border border = BorderFactory
-					.createTitledBorder("Processando as imagens e inserindo no banco de dados...");
-			progressBar.setBorder(border);
-			content.add(progressBar, BorderLayout.NORTH);
-			JLabel label = new JLabel("Calculando tempo estimado...",
-					SwingConstants.CENTER);
-			label.setFont(new Font("Sans serif", Font.PLAIN, 10));
-			f.setResizable(false);
-			f.add(label);
-
 			// Getting the list of images to an ArrayList
 			LOG.println("GeotagImages: Getting the list of images to an ArrayList");
 			ArrayList<Image> images = folder.getImages();
-
-			f.setSize(400, 100);
-			f.setVisible(true);
-			progressBar.setMinimum(0);
-			progressBar.setMaximum(images.size());
-			long startTime = System.currentTimeMillis();
-
-			Runnable runner = new Runnable() {
-				@Override
-				public void run() {
-					int value = progressBar.getValue();
-					progressBar.setValue(value + 1);
-				}
-			};
 
 			// Connecting to the Database
 			DatabaseManager dm = new DatabaseManager("config.properties");
@@ -103,42 +52,15 @@ public class GeotagImages {
 			// Starts the processing of images
 			LOG.println("GeotagImages: Starts the processing of images");
 			for (int i = 0; i < images.size(); i++) {
-				if (i > 0) {
-					double passedTime = System.currentTimeMillis() - startTime;
-
-					long[] passedTimeArr = { (long) ((passedTime / 1000) % 60),
-							(long) ((passedTime / (1000 * 60)) % 60),
-							(long) (passedTime / (1000 * 60 * 60)) };
-
-					double totalTime = ((double) images.size() / (double) i)
-							* passedTime;
-					double timeLeft = totalTime - passedTime;
-
-					long[] estimatedTimeArr = {
-							(long) ((timeLeft / 1000) % 60),
-							(long) ((timeLeft / (1000 * 60)) % 60),
-							(long) (timeLeft / (1000 * 60 * 60)) };
-
-					String time = String.format("%01dh %01dm %01ds",
-							estimatedTimeArr[2], estimatedTimeArr[1],
-							estimatedTimeArr[0]);
-
-					String currentTime = String.format("%01dh %01dm %01ds",
-							passedTimeArr[2], passedTimeArr[1],
-							passedTimeArr[0]);
-
-					label.setText("Tempo restante: " + time + " / Decorrido: "
-							+ currentTime);
-				}
 
 				Image img = images.get(i);
 
-				// If img equals null, it means it is not an image, maybe a
-				// folder or other files
-				LOG.println("GeotagImages: If img equals null, it means it is not an image, maybe a folder or other files");
+				/* 
+				 * If img equals null, it means it is not an image, maybe a 
+				 * folder or other files
+				 */
 				if (img != null) {
 					// Creates the imgData object to prepare the image to be resized
-					LOG.println("GeotagImages: Creates the imgData object to prepare the image to be resized");
 					ImageData imgData = new ImageData(new FileInputStream(
 							img.getPath()), img.getPath());
 					imgData.resize(IMG_MAX_WIDTH, IMG_MAX_HEIGHT);
@@ -153,9 +75,10 @@ public class GeotagImages {
 							+ img.getLatitude() + "\nLongitude: "
 							+ img.getLongitude());
 
-					// After resizing, sets the final path of the file and
-					// creates it.
-					LOG.println("GeotagImages: After resizing, sets the final path of the file and creates it");
+					/* 
+					 * After resizing, sets the final path of the file and 
+					 * creates it.
+					 */
 					String resultPath = outputFolder + "/"
 							+ img.getFile().getName();
 					imgData.writeJPEG(new FileOutputStream(resultPath));
@@ -217,12 +140,6 @@ public class GeotagImages {
 					 * "",gmaps.get("mapsURL"),gmaps.get("address"));
 					 */
 				}
-
-				progressBar.setValue(i);
-				Thread t = new Thread(runner);
-				t.start();
-				//SwingUtilities.invokeAndWait(runner);
-
 				LOG.println("GeotagImages: Resizing and Uploading File "
 						+ (i + 1) + "/" + images.size());
 			}
@@ -230,8 +147,7 @@ public class GeotagImages {
 			ftpm.disconnect();
 			dm.disconnect();
 
-			JOptionPane.showMessageDialog(null,
-					"Imagens inseridas com sucesso.");
+			JOptionPane.showMessageDialog(null,"Imagens inseridas com sucesso.");
 
 			// eFile.close();
 		} catch (Exception e) {
